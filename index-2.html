@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exquisite Corpse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Raleway', sans-serif; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        textarea { width: 100%; height: 100px; margin-top: 10px; }
+        .hidden-text { display: none; }
+        .last-words { font-weight: bold; margin-top: 10px; }
+        .entry { margin-top: 20px; }
+        button { margin-top: 10px; }
+        
+        h2 { 
+            font-family: 'Raleway', sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+        
+        h3 {
+            font-family: 'Raleway', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 40px;
+        }
+        
+        .story-list { 
+            margin-top: 50px; 
+            text-align: left; 
+            padding-top: 20px; 
+            border-top: 4px solid #333; 
+        }
+        
+        select, input { margin-top: 10px; }
+        
+        .story-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .story-card {
+            border: 2px solid #ccc;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        
+        @media (max-width: 600px) {
+            .story-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Exquisite Corpse</h2>
+        <label for="playerName">Dein Name:</label>
+        <input type="text" id="playerName" placeholder="Gib deinen Namen ein">
+        <label for="playerColor">Farbe wählen:</label>
+        <input type="color" id="playerColor">
+        <br>
+        <label for="theme">Thema:</label>
+        <input type="text" id="theme" placeholder="Gib ein Thema ein">
+        <button onclick="lockTheme()" id="lockThemeBtn">Thema festlegen</button>
+        <br>
+        <div id="lastWords" class="last-words">Letzte Wörter: <span id="visibleWords">-</span></div>
+        <textarea id="newEntry" placeholder="Schreibe deinen Absatz..."></textarea>
+        <br>
+        <label for="wordCount">Wie viele Wörter sollen sichtbar bleiben?</label>
+        <select id="wordCount">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+        </select>
+        <br>
+        <button onclick="addEntry()">Absenden</button>
+        <button onclick="revealStory()">Story enthüllen</button>
+        <div id="storyContainer"></div>
+        
+        <div class="story-list">
+            <h3>Vergangene Geschichten</h3>
+            <div id="pastStories" class="story-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        if (!window.entries) window.entries = JSON.parse(localStorage.getItem('entries')) || [];
+        if (!window.pastStories) window.pastStories = JSON.parse(localStorage.getItem('pastStories')) || [];
+        let themeLocked = false;
+        
+        function lockTheme() {
+            let themeInput = document.getElementById('theme');
+            let lockButton = document.getElementById('lockThemeBtn');
+            
+            if (!themeLocked && themeInput.value.trim() !== "") {
+                themeInput.disabled = true;
+                lockButton.disabled = true;
+                themeLocked = true;
+            }
+        }
+        
+        function addEntry() {
+            let newEntryElement = document.getElementById('newEntry');
+            let newEntry = newEntryElement.value.trim();
+            let playerName = document.getElementById('playerName').value.trim() || "Unbekannt";
+            let playerColor = document.getElementById('playerColor').value;
+            let selectedTheme = document.getElementById('theme').value.trim();
+            
+            if (!newEntry) return;
+            
+            let words = newEntry.split(" ");
+            let wordCount = parseInt(document.getElementById('wordCount').value, 10);
+            let lastWords = words.slice(-wordCount).join(" "); 
+            
+            window.entries.push({ fullText: newEntry, lastWords: lastWords, player: playerName, color: playerColor, theme: selectedTheme });
+            localStorage.setItem('entries', JSON.stringify(window.entries));
+            
+            document.getElementById('visibleWords').innerText = lastWords;
+            newEntryElement.value = "";
+        }
+        
+        function revealStory() {
+            let container = document.getElementById('storyContainer');
+            container.innerHTML = `<h3>Komplette Geschichte:</h3>`;
+            
+            let themeText = window.entries.length > 0 ? `<h4>Thema: ${window.entries[0].theme}</h4>` : "";
+            container.innerHTML += themeText;
+            
+            window.entries.forEach(entry => {
+                let p = document.createElement('p');
+                p.innerHTML = `<strong style="color:${entry.color}">${entry.player}:</strong> ${entry.fullText}`;
+                container.appendChild(p);
+            });
+        }
+    </script>
+</body>
+</html>
