@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exquisite Corpse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Exquisite Corpse</h2>
+        <label for="playerName">Dein Name:</label>
+        <input type="text" id="playerName" placeholder="Gib deinen Namen ein">
+        <label for="playerColor">Farbe wählen:</label>
+        <input type="color" id="playerColor">
+        <br>
+        <div id="lastWords" class="last-words">Letzte Wörter: <span id="visibleWords">-</span></div>
+        <textarea id="newEntry" placeholder="Schreibe deinen Absatz..."></textarea>
+        <br>
+        <label for="wordCount">Wie viele Wörter sollen sichtbar bleiben?</label>
+        <select id="wordCount">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+        </select>
+        <br>
+        <button onclick="addEntry()">Absenden</button>
+        <button onclick="revealStory()">Story enthüllen</button>
+        <button onclick="deleteAllStories()">Alle Geschichten löschen</button>
+        <div id="storyContainer"></div>
+        
+        <div class="story-list">
+            <h3>Vergangene Geschichten</h3>
+            <div id="pastStories" class="story-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBgH6Z4Ml4oZqd1j0heUCE8JMXGR5vQ2I",
+            authDomain: "exquisite-corpse-ee446.firebaseapp.com",
+            databaseURL: "https://exquisite-corpse-ee446-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "exquisite-corpse-ee446",
+            storageBucket: "exquisite-corpse-ee446.firebasestorage.app",
+            messagingSenderId: "791127383685",
+            appId: "1:791127383685:web:cdfe1e1b4eb0ae337e93ec"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function addEntry() {
+            let newEntry = document.getElementById('newEntry').value.trim();
+            let playerName = document.getElementById('playerName').value.trim() || "Unbekannt";
+            let playerColor = document.getElementById('playerColor').value;
+            let wordCount = parseInt(document.getElementById('wordCount').value, 10);
+            
+            if (!newEntry) return;
+            
+            let words = newEntry.split(" ");
+            let lastWords = words.slice(-wordCount).join(" ");
+            
+            db.ref('entries').push({
+                fullText: newEntry,
+                lastWords: lastWords,
+                player: playerName,
+                color: playerColor
+            });
+            
+            document.getElementById('visibleWords').innerText = lastWords;
+            document.getElementById('newEntry').value = "";
+        }
+        
+        window.onload = () => {
+            db.ref('entries').on('value', (snapshot) => {
+                let entries = snapshot.val();
+                document.getElementById('storyContainer').innerHTML = "";
+                if (entries) {
+                    Object.values(entries).forEach(entry => {
+                        let p = document.createElement('p');
+                        p.innerHTML = `<strong style="color:${entry.color}">${entry.player}:</strong> ${entry.fullText}`;
+                        document.getElementById('storyContainer').appendChild(p);
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
