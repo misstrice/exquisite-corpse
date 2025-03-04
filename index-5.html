@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exquisite Corpse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h2>Exquisite Corpse</h2>
+        <label for="playerName">Dein Name:</label>
+        <input type="text" id="playerName" placeholder="Gib deinen Namen ein">
+        <label for="playerColor">Farbe wählen:</label>
+        <input type="color" id="playerColor">
+        <br>
+        <label for="theme">Thema:</label>
+        <input type="text" id="theme" placeholder="Gib ein Thema ein">
+        <button onclick="lockTheme()" id="lockThemeBtn">Thema festlegen</button>
+        <br>
+        <div id="lastWords" class="last-words">Letzte Wörter: <span id="visibleWords">-</span></div>
+        <textarea id="newEntry" placeholder="Schreibe deinen Absatz..."></textarea>
+        <br>
+        <label for="wordCount">Wie viele Wörter sollen sichtbar bleiben?</label>
+        <select id="wordCount">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+        </select>
+        <br>
+        <button onclick="addEntry()">Absenden</button>
+        <button onclick="revealStory()">Story enthüllen</button>
+        <button onclick="downloadStories()">Vergangene Geschichten herunterladen</button>
+        <div id="storyContainer"></div>
+        
+        <div class="story-list">
+            <h3>Vergangene Geschichten</h3>
+            <div id="pastStories" class="story-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        let entries = JSON.parse(localStorage.getItem('entries')) || [];
+        let pastStories = JSON.parse(localStorage.getItem('pastStories')) || [];
+        let themeLocked = false;
+        
+        function lockTheme() {
+            let themeInput = document.getElementById('theme');
+            let lockButton = document.getElementById('lockThemeBtn');
+            
+            if (!themeLocked && themeInput.value.trim() !== "") {
+                themeInput.disabled = true;
+                lockButton.disabled = true;
+                themeLocked = true;
+            }
+        }
+        
+        function addEntry() {
+            let newEntryElement = document.getElementById('newEntry');
+            let newEntry = newEntryElement.value.trim();
+            let playerName = document.getElementById('playerName').value.trim() || "Unbekannt";
+            let playerColor = document.getElementById('playerColor').value;
+            let selectedTheme = document.getElementById('theme').value.trim();
+            
+            if (!newEntry) return;
+            
+            let words = newEntry.split(" ");
+            let wordCount = parseInt(document.getElementById('wordCount').value, 10);
+            let lastWords = words.slice(-wordCount).join(" "); 
+            
+            entries.push({ fullText: newEntry, lastWords: lastWords, player: playerName, color: playerColor, theme: selectedTheme });
+            localStorage.setItem('entries', JSON.stringify(entries));
+            
+            document.getElementById('visibleWords').innerText = lastWords;
+            newEntryElement.value = "";
+        }
+        
+        function revealStory() {
+            let container = document.getElementById('storyContainer');
+            container.innerHTML = `<h3>Komplette Geschichte:</h3>`;
+            
+            let themeText = entries.length > 0 ? `<h4>Thema: ${entries[0].theme}</h4>` : "";
+            container.innerHTML += themeText;
+            
+            entries.forEach(entry => {
+                let p = document.createElement('p');
+                p.innerHTML = `<strong style="color:${entry.color}">${entry.player}:</strong> ${entry.fullText}`;
+                container.appendChild(p);
+            });
+            
+            if (entries.length) {
+                pastStories.push([...entries]);
+                localStorage.setItem('pastStories', JSON.stringify(pastStories));
+                updatePastStories();
+            }
+            
+            entries = [];
+            localStorage.setItem('entries', JSON.stringify([]));
+            document.getElementById('visibleWords').innerText = "-";
+        }
+        
+        function updatePastStories() {
+            let pastStoriesContainer = document.getElementById('pastStories');
+            pastStoriesContainer.innerHTML = "";
+            pastStories.forEach((storyArray, index) => {
+                let div = document.createElement('div');
+                div.classList.add('story-card');
+                div.innerHTML = `<h4>Geschichte ${index + 1}</h4>` + storyArray.map(e => `<strong style="color:${e.color}">${e.player}:</strong> ${e.fullText}`).join('<br>');
+                pastStoriesContainer.appendChild(div);
+            });
+        }
+
+        function downloadStories() {
+            let text = "Vergangene Geschichten:\n\n";
+            pastStories.forEach((storyArray, index) => {
+                text += `Geschichte ${index + 1}:\n`;
+                storyArray.forEach(entry => {
+                    text += `${entry.player}: ${entry.fullText}\n`;
+                });
+                text += "\n----------------------\n\n";
+            });
+
+            let blob = new Blob([text], { type: "text/plain" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "Vergangene_Geschichten.txt";
+            link.click();
+        }
+
+        window.onload = updatePastStories;
+    </script>
+</body>
+</html>
